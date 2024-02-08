@@ -28,7 +28,6 @@ public class ApplicationContext {
 		var wheelTypes = findWheelTypes();
 		populateContext(wheelTypes);
 		log.log(Level.SEVERE, context.toString());
-//		context.forEach((k, v) -> log.debug(k.getSimpleName()));
 	}
 
 	private Set<Class<?>> findWheelTypes() {
