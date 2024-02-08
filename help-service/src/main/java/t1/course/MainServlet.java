@@ -1,8 +1,7 @@
 package t1.course;
 
-import t1.course.repository.InMemorySupportRepository;
 import t1.course.service.SupportService;
-import t1.course.service.SupportServiceImpl;
+import t1.course.system.ApplicationContext;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,8 +29,9 @@ public class MainServlet extends HttpServlet {
 
 	@Override
 	public void init() {
-		var supportRepository = new InMemorySupportRepository();
-		supportService = new SupportServiceImpl(supportRepository);
+		var context = new ApplicationContext(this);
+		context.init();
+		supportService = context.getWheel(SupportService.class);
 	}
 
 	void setSupportService(SupportService supportService) {

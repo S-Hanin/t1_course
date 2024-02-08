@@ -1,8 +1,11 @@
 package t1.course.repository;
 
+import t1.course.system.core.Wheel;
+
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Wheel
 public class InMemorySupportRepository implements SupportRepository {
 
 	private final Set<String> storage = ConcurrentHashMap.newKeySet();
