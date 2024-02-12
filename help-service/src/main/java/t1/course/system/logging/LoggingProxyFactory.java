@@ -1,5 +1,6 @@
 package t1.course.system.logging;
 
+import lombok.RequiredArgsConstructor;
 import t1.course.system.core.WheelProxyFactory;
 
 import java.lang.reflect.InvocationHandler;
@@ -24,13 +25,10 @@ public class LoggingProxyFactory implements WheelProxyFactory {
 	}
 
 
+	@RequiredArgsConstructor
 	public static class LogInvocationHandler implements InvocationHandler {
 
 		private final Object origin;
-
-		public LogInvocationHandler(Object origin) {
-			this.origin = origin;
-		}
 
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
