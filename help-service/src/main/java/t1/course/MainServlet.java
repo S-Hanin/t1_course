@@ -1,40 +1,53 @@
 package t1.course;
 
-import t1.course.service.SupportService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import t1.course.system.ApplicationContext;
+import t1.course.system.web.UrlHandlerRegistry;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.stream.Collectors;
 
 public class MainServlet extends HttpServlet {
 
-	private SupportService supportService;
+	private UrlHandlerRegistry urlHandlerRegistry;
+	private ObjectMapper objectMapper;
 
+	@SneakyThrows
 	@Override
-	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		resp.setContentType("text/plain");
-		resp.getWriter().println(supportService.getRandomPhrase());
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
+		var handler = urlHandlerRegistry.getHttpMethodHandlers().get("GET " + req.getPathInfo());
+		var controller = handler._1();
+		var method = handler._2();
+
+		resp.setContentType("application/json");
+		var result = method.invoke(controller);
+		resp.getWriter().println(objectMapper.writeValueAsString(result));
 	}
 
+	@SneakyThrows
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-		var phrase = req.getReader().lines()
-			.collect(Collectors.joining());
-		supportService.addPhrase(phrase);
-		resp.setStatus(200);
+	protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+		var handler = urlHandlerRegistry.getHttpMethodHandlers().get("POST " + req.getPathInfo());
+		var controller = handler._1();
+		var method = handler._2();
+		var requestBody = method.getParameters()[0];
+
+		var parser = objectMapper.createParser(req.getReader().lines().collect(Collectors.joining()));
+		Object body = parser.readValueAs(requestBody.getType());
+
+		resp.setContentType("application/json");
+		var result = method.invoke(controller, body);
+		resp.getWriter().println(objectMapper.writeValueAsString(result));
 	}
 
 	@Override
 	public void init() {
-		var context = new ApplicationContext(this);
+		ApplicationContext context = new ApplicationContext(this);
 		context.init();
-		supportService = context.getWheel(SupportService.class);
-	}
-
-	void setSupportService(SupportService supportService) {
-		this.supportService = supportService;
+		urlHandlerRegistry = context.getWheel(UrlHandlerRegistry.class);
+		objectMapper = new ObjectMapper();
 	}
 }

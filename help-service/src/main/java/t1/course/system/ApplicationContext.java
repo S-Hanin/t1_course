@@ -1,21 +1,20 @@
 package t1.course.system;
 
+import io.vavr.control.Try;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.reflections.Reflections;
 import t1.course.system.core.Wheel;
+import t1.course.system.core.WheelPostProcessor;
+import t1.course.system.core.WheelsCreator;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+@Slf4j
 public class ApplicationContext {
-
-	private Logger log = Logger.getLogger(this.getClass().getSimpleName());
 
 	private final Map<Class<?>, Object> context = new HashMap<>();
 	private final String packageName;
@@ -25,48 +24,68 @@ public class ApplicationContext {
 	}
 
 	public void init() {
-		var wheelTypes = findWheelTypes();
-		populateContext(wheelTypes);
-		log.log(Level.SEVERE, context.toString());
+		processWheelTypes();
+		log.debug(context.toString());
 	}
 
-	private Set<Class<?>> findWheelTypes() {
+	private void processWheelTypes() {
 		var reflections = new Reflections(packageName);
-		var wheels = reflections.getTypesAnnotatedWith(Wheel.class);
-		return wheels;
+		runWheelCreators(reflections);
+		runWheelPostProcessors(reflections);
 	}
 
-	private void populateContext(Set<Class<?>> wheelTypes) {
-		while (!context.keySet().containsAll(wheelTypes)) {
-			wheelTypes.stream()
-				.sorted(Comparator.comparingInt(it -> it.getDeclaredConstructors()[0].getParameterTypes().length))
-				.forEach(it -> {
-					if (context.containsKey(it)) {
-						return;
-					}
+	private void runWheelCreators(Reflections reflections) {
+		var processorTypes = reflections.getSubTypesOf(WheelsCreator.class);
+		var wheelProcessors = processorTypes.stream().map(ApplicationContext::getNewCreatorInstance).toList();
+		var wheelTypes = reflections.getTypesAnnotatedWith(Wheel.class);
 
-					Optional.ofNullable(createWheel(it))
-						.ifPresent(wheel -> {
-							context.put(it, wheel);
-							Arrays.stream(it.getInterfaces())
-								.forEach(_interface -> context.put(_interface, wheel));
-						});
-				});
-		}
+		wheelProcessors.forEach(processor -> processor.process(wheelTypes, this));
+	}
+
+	private void runWheelPostProcessors(Reflections reflections) {
+		var processorTypes = reflections.getSubTypesOf(WheelPostProcessor.class);
+		var wheelProcessors = processorTypes.stream().map(ApplicationContext::getNewPostProcessorInstance).toList();
+
+		wheelProcessors.forEach(it -> context.put(it.getClass(), it));
+		context.entrySet().stream()
+			.distinct()
+			.forEach(entry -> wheelProcessors
+				.forEach(processor -> processor.process(entry.getKey(), entry.getValue())));
 	}
 
 	@SneakyThrows
-	private Object createWheel(Class<?> it) {
-		var constructors = it.getDeclaredConstructors();
-		var parameterTypes = constructors[0].getParameterTypes();
-		var objects = Arrays.stream(parameterTypes)
-			.map(param -> context.getOrDefault(param, null))
-			.toList();
-		if (objects.contains(null)) return null;
-		return constructors[0].newInstance(objects.toArray());
+	private static WheelsCreator getNewCreatorInstance(Class<? extends WheelsCreator> it) {
+		return it.getDeclaredConstructor().newInstance();
 	}
 
+	@SneakyThrows
+	private static WheelPostProcessor getNewPostProcessorInstance(Class<? extends WheelPostProcessor> it) {
+		return it.getDeclaredConstructor().newInstance();
+	}
+
+	public <T> void addWheel(Class<T> wheelType, Object wheel) {
+		context.put(wheelType, wheel);
+	}
+
+	@SuppressWarnings("unchecked")
 	public <T> T getWheel(Class<T> wheelType) {
-		return wheelType.cast(context.get(wheelType));
+		if (context.containsKey(wheelType)) {
+			return (T) context.get(wheelType);
+		}
+
+		var key = context.keySet().stream()
+			.filter(it -> Arrays.asList(it.getInterfaces()).contains(wheelType))
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("Wheel not found in context: " + wheelType.getName()));
+		return (T) context.get(key);
+	}
+
+	public <T> T getWheelOrNull(Class<T> wheelType) {
+		return Try.of(() -> getWheel(wheelType))
+			.getOrNull();
+	}
+
+	public boolean containsAll(Set<Class<?>> wheelTypes) {
+		return context.keySet().containsAll(wheelTypes);
 	}
 }
