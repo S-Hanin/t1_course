@@ -40,6 +40,7 @@ class MainServletTest {
 		//given
 		var body = "{\"text\":\"There's no advices yet\"}";
 		when(request.getPathInfo()).thenReturn("/v1/support");
+		when(request.getMethod()).thenReturn("GET");
 
 		//when
 		servlet.doGet(request, response);
@@ -53,6 +54,8 @@ class MainServletTest {
 		//given
 		var body = "{\"text\":\"test advice\"}";
 		when(request.getPathInfo()).thenReturn("/v1/support");
+		when(request.getMethod()).thenReturn("POST");
+
 		var reader = mock(BufferedReader.class);
 		when(reader.lines()).thenReturn(Stream.of(body));
 		when(request.getReader()).thenReturn(reader);
