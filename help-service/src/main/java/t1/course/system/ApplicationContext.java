@@ -47,10 +47,8 @@ public class ApplicationContext {
 		var wheelProcessors = processorTypes.stream().map(ApplicationContext::getNewPostProcessorInstance).toList();
 
 		wheelProcessors.forEach(it -> context.put(it.getClass(), it));
-		context.entrySet().stream()
-			.distinct()
-			.forEach(entry -> wheelProcessors
-				.forEach(processor -> processor.process(entry.getKey(), entry.getValue())));
+		context.forEach((key, value) -> wheelProcessors
+			.forEach(processor -> processor.process(key, value)));
 	}
 
 	@SneakyThrows
