@@ -2,7 +2,6 @@ package t1.course;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import t1.course.service.SupportService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -13,14 +12,11 @@ import java.io.StringWriter;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class MainServletTest {
 
-	private SupportService supportService;
 	private MainServlet servlet;
 	private HttpServletRequest request;
 	private HttpServletResponse response;
@@ -28,10 +24,9 @@ class MainServletTest {
 
 	@BeforeEach
 	void setUp() throws IOException {
-		supportService = mock(SupportService.class);
 
 		servlet = new MainServlet();
-		servlet.setSupportService(supportService);
+		servlet.init();
 
 		request = mock(HttpServletRequest.class);
 		response = mock(HttpServletResponse.class);
@@ -41,29 +36,35 @@ class MainServletTest {
 	}
 
 	@Test
-	void doGet_returnResponse_whenRequest() throws IOException {
+	void doGet_returnResponse_whenRequest() {
 		//given
-		when(supportService.getRandomPhrase()).thenReturn("test advice");
+		var body = "{\"text\":\"There's no advices yet\"}";
+		when(request.getPathInfo()).thenReturn("/v1/support");
+		when(request.getMethod()).thenReturn("GET");
 
 		//when
 		servlet.doGet(request, response);
 
 		//then
-		assertThat(writer.toString()).isNotEmpty();
+		assertThat(writer.toString()).isEqualToIgnoringNewLines(body);
 	}
 
 	@Test
 	void doPost_returnOk_whenRequest() throws IOException {
 		//given
+		var body = "{\"text\":\"test advice\"}";
+		when(request.getPathInfo()).thenReturn("/v1/support");
+		when(request.getMethod()).thenReturn("POST");
+
 		var reader = mock(BufferedReader.class);
-		when(reader.lines()).thenReturn(Stream.of("test advice"));
+		when(reader.lines()).thenReturn(Stream.of(body));
 		when(request.getReader()).thenReturn(reader);
 
 		//when
 		servlet.doPost(request, response);
 
 		//then
-		verify(supportService).addPhrase(anyString());
+		assertThat(writer.toString()).isEqualToIgnoringNewLines(body);
 	}
 
 
