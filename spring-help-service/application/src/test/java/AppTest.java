@@ -9,7 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.khanin.App;
 import ru.khanin.dto.Phrase;
 import ru.khanin.repository.InMemorySupportRepository;
-import ru.khanin.service.PhraseQueuePublisher;
+import ru.khanin.service.PhrasePublisher;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
@@ -33,7 +33,7 @@ public class AppTest {
 	@SpyBean
 	private InMemorySupportRepository repository;
 	@SpyBean
-	private PhraseQueuePublisher publisher;
+	private PhrasePublisher publisher;
 
 	@Test
 	void getSupportPhrase_shouldReturnDefaultPhrase_whenNoPhrases() throws Exception {
