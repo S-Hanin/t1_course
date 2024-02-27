@@ -2,3 +2,17 @@ logging:
   level:
     ru:
       khanin: DEBUG
+
+external:
+  kafka:
+    enabled: true
+    topic: help-service.phrases
+    setup:
+      bootstrap-servers: localhost:29092
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      consumer:
+        group-id: help-service-consumer
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

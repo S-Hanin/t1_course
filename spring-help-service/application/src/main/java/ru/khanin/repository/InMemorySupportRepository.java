@@ -25,6 +25,8 @@ public class InMemorySupportRepository {
 	}
 
 	public void savePhrase(Phrase phrase) {
-		storage.put(UUID.randomUUID(), phrase);
+		if (!storage.containsValue(phrase)) {
+			storage.put(UUID.randomUUID(), phrase);
+		}
 	}
 }
